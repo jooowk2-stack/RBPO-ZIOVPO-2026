@@ -1,9 +1,0 @@
-package com.example.grants.repository;
-
-import com.example.grants.model.ProjectApplication;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
-@Repository
-public interface ProjectApplicationRepository extends JpaRepository<ProjectApplication, Long> {
-}
