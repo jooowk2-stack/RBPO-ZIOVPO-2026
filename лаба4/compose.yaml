@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: hotel-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      MIGRATION_DB_USER: ${MIGRATION_DB_USER:?Set MIGRATION_DB_USER in .env}
+      MIGRATION_DB_PASSWORD: ${MIGRATION_DB_PASSWORD:?Set MIGRATION_DB_PASSWORD in .env}
+      APP_DB_USER: ${APP_DB_USER:?Set APP_DB_USER in .env}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Set APP_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - hotel_postgres_data:/var/lib/postgresql/data
+      - ./db/init/01-create-roles.sh:/docker-entrypoint-initdb.d/01-create-roles.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: hotel-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${APP_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${APP_DB_PASSWORD}
+      SPRING_FLYWAY_URL: jdbc:postgresql://db:5432/${POSTGRES_DB}
+      SPRING_FLYWAY_USER: ${MIGRATION_DB_USER}
+      SPRING_FLYWAY_PASSWORD: ${MIGRATION_DB_PASSWORD}
+      SERVER_PORT: 8080
+    ports:
+      - "127.0.0.1:8080:8080"
+
+volumes:
+  hotel_postgres_data:
