@@ -2,10 +2,12 @@ package ru.student.grants.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.util.Set;
 
 @Entity
 @Table(name = "users")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -14,8 +16,18 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String name;
+    @Column(unique = true, nullable = false)
+    private String username;
 
-    @Column(unique = true)
+    @Column(nullable = false)
+    private String password;
+
+    @Column(unique = true, nullable = false)
     private String email;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role")
+    private Set<Role> roles;
 }

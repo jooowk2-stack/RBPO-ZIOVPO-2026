@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class BusinessService {
@@ -110,5 +111,10 @@ public class BusinessService {
             }
         }
         return "Проверка завершена. Отклонено заявок из-за превышения бюджета: " + rejectedCount;
+    }
+
+    // 6. Получение списка всех конкурсов
+    public List<GrantCompetition> getAllCompetitions() {
+        return competitionRepository.findAll();
     }
 }

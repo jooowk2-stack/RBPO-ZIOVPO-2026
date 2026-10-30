@@ -1,5 +1,6 @@
 package ru.student.grants.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import ru.student.grants.model.*;
 import ru.student.grants.service.BusinessService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,5 +47,21 @@ public class BusinessController {
     @PostMapping("/audit-budget/{competitionId}")
     public ResponseEntity<String> auditBudget(@PathVariable Long competitionId) {
         return ResponseEntity.ok(businessService.auditAndRejectExcessiveApplications(competitionId));
+    }
+
+    // Доступно только администратору
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/contests")
+    public ResponseEntity<?> createContest(@RequestParam String title, @RequestParam Double totalBudget) {
+        // Логика создания конкурса доступна только админу
+        return ResponseEntity.ok("Конкурс успешно создан");
+    }
+
+    // Доступно всем авторизованным пользователям с указанными ролями
+    @PreAuthorize("hasAnyRole('APPLICANT', 'ADMIN', 'EXPERT')")
+    @GetMapping("/contests")
+    public ResponseEntity<?> getAllContests() {
+        // Вызываем корректный метод сервиса, который мы только что добавили
+        return ResponseEntity.ok(businessService.getAllCompetitions());
     }
 }
