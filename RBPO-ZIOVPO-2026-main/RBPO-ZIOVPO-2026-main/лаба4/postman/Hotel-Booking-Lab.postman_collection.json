@@ -1,0 +1,924 @@
+{
+  "info": {
+    "_postman_id": "2a8ad35e-18c2-4c7b-a7a7-7f4f6f31a203",
+    "name": "Hotel Booking — лабораторная работа 3",
+    "description": "Коллекция покрывает CRUD для всех трёх сущностей и последовательный сценарий бизнес-операций. Выполнять запросы сверху вниз. Даты рассчитываются динамически.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function localDay(offset) {",
+          "  const d = new Date();",
+          "  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());",
+          "  d.setUTCDate(d.getUTCDate() + offset);",
+          "  return d.toISOString().slice(0, 10);",
+          "}",
+          "pm.collectionVariables.set('checkInDate', localDay(0));",
+          "pm.collectionVariables.set('checkOutDate', localDay(2));",
+          "pm.collectionVariables.set('extensionCheckOutDate', localDay(4));",
+          "pm.collectionVariables.set('crudCheckInDate', localDay(10));",
+          "pm.collectionVariables.set('crudCheckOutDate', localDay(12));",
+          "pm.collectionVariables.set('cancelCheckInDate', localDay(20));",
+          "pm.collectionVariables.set('cancelCheckOutDate', localDay(22));",
+          "pm.collectionVariables.set('overlapStartDate', localDay(30));",
+          "pm.collectionVariables.set('overlapEndDate', localDay(32));",
+          "pm.collectionVariables.set('conflictStartDate', localDay(31));",
+          "pm.collectionVariables.set('conflictEndDate', localDay(33));",
+          "if (pm.info.requestName === 'Создать основного клиента') pm.collectionVariables.set('customerEmail', 'ekaterina.' + Date.now() + '@example.com');",
+          "if (pm.info.requestName === 'Создать клиента для проверки DELETE') pm.collectionVariables.set('deleteCustomerEmail', 'temporary.' + Date.now() + '@example.com');",
+          "if (pm.info.requestName === 'Создать основной номер') pm.collectionVariables.set('roomNumber', '9' + String(Date.now()).slice(-8));",
+          "if (pm.info.requestName === 'Создать номер для проверки DELETE') pm.collectionVariables.set('deleteRoomNumber', '8' + String(Date.now()).slice(-8));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. CRUD — клиенты",
+      "item": [
+        {
+          "name": "Создать основного клиента",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/customers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Екатерина Орлова\",\n  \"email\": \"{{customerEmail}}\",\n  \"phone\": \"+7-900-111-22-00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('customerId', String(data.id));",
+                  "pm.test('Ответ содержит ID', () => pm.expect(data.id).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Получить список клиентов",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customers"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Получить основного клиента по ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/customers/{{customerId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Изменить основного клиента",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/customers/{{customerId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Екатерина Орлова\",\n  \"email\": \"{{customerEmail}}\",\n  \"phone\": \"+7-900-111-22-99\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Создать клиента для проверки DELETE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/customers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Временный клиент\",\n  \"email\": \"{{deleteCustomerEmail}}\",\n  \"phone\": \"+7-900-000-00-01\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('deleteCustomerId', String(data.id));",
+                  "pm.test('Ответ содержит ID', () => pm.expect(data.id).to.exist);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. CRUD — номера",
+      "item": [
+        {
+          "name": "Создать основной номер",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/rooms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"{{roomNumber}}\",\n  \"type\": \"DOUBLE\",\n  \"capacity\": 2,\n  \"pricePerNight\": 125.0,\n  \"status\": \"AVAILABLE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('roomId', String(data.id));",
+                  "pm.test('Ответ содержит ID', () => pm.expect(data.id).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Получить список номеров",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Получить основной номер по ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Изменить основной номер",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"{{roomNumber}}\",\n  \"type\": \"DOUBLE\",\n  \"capacity\": 2,\n  \"pricePerNight\": 130.0,\n  \"status\": \"AVAILABLE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Создать номер для проверки DELETE",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/rooms",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"number\": \"{{deleteRoomNumber}}\",\n  \"type\": \"SINGLE\",\n  \"capacity\": 1,\n  \"pricePerNight\": 70.0,\n  \"status\": \"AVAILABLE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('deleteRoomId', String(data.id));",
+                  "pm.test('Ответ содержит ID', () => pm.expect(data.id).to.exist);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. CRUD — бронирования",
+      "item": [
+        {
+          "name": "Создать бронирование через CRUD",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/bookings",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"checkInDate\": \"{{crudCheckInDate}}\",\n  \"checkOutDate\": \"{{crudCheckOutDate}}\",\n  \"guests\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('crudBookingId', String(data.id));",
+                  "pm.test('Ответ содержит ID', () => pm.expect(data.id).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Получить список бронирований",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Получить CRUD-бронирование по ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings/{{crudBookingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Изменить CRUD-бронирование",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/bookings/{{crudBookingId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"checkInDate\": \"{{crudCheckInDate}}\",\n  \"checkOutDate\": \"{{crudCheckOutDate}}\",\n  \"guests\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Удалить CRUD-бронирование",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings/{{crudBookingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Бизнес-операции — основной сценарий",
+      "item": [
+        {
+          "name": "1) Создать бронирование",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/operations/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"checkInDate\": \"{{checkInDate}}\",\n  \"checkOutDate\": \"{{checkOutDate}}\",\n  \"guests\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('bookingId', String(data.id));",
+                  "pm.test('Ответ содержит ID', () => pm.expect(data.id).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2) Подтвердить бронирование",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/operations/bookings/{{bookingId}}/confirm"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3) Продлить проживание",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/operations/bookings/{{bookingId}}/extend",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newCheckOutDate\": \"{{extensionCheckOutDate}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4) Заселить гостя (дата заезда сегодня)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/operations/bookings/{{bookingId}}/check-in"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5) Оформить выезд",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/operations/bookings/{{bookingId}}/check-out"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6) Завершить уборку номера",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/operations/rooms/{{roomId}}/finish-cleaning"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Проверить номер после уборки",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms/{{roomId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Номер снова AVAILABLE', () => pm.expect(pm.response.json().status).to.eql('AVAILABLE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Проверить завершённое бронирование",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/bookings/{{bookingId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Бронирование CHECKED_OUT', () => pm.expect(pm.response.json().status).to.eql('CHECKED_OUT'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Бизнес-операция — отмена",
+      "item": [
+        {
+          "name": "Создать отдельное будущее бронирование",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/operations/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"checkInDate\": \"{{cancelCheckInDate}}\",\n  \"checkOutDate\": \"{{cancelCheckOutDate}}\",\n  \"guests\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('cancelBookingId', String(data.id));",
+                  "pm.test('Ответ содержит ID', () => pm.expect(data.id).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Отменить будущее бронирование",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/operations/bookings/{{cancelBookingId}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Бронирование отменено', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. Негативные проверки правил",
+      "item": [
+        {
+          "name": "Отклонить количество гостей выше вместимости",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/operations/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"checkInDate\": \"{{cancelCheckInDate}}\",\n  \"checkOutDate\": \"{{cancelCheckOutDate}}\",\n  \"guests\": 99\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ожидается конфликт бизнес-правила', () => pm.expect(pm.response.code).to.eql(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Отклонить неправильный диапазон дат",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/operations/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"checkInDate\": \"{{checkInDate}}\",\n  \"checkOutDate\": \"{{checkInDate}}\",\n  \"guests\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Ожидается конфликт бизнес-правила', () => pm.expect(pm.response.code).to.eql(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Создать бронирование для проверки пересечения",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/operations/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"checkInDate\": \"{{overlapStartDate}}\",\n  \"checkOutDate\": \"{{overlapEndDate}}\",\n  \"guests\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set('overlapBookingId', String(data.id));",
+                  "pm.test('Ответ содержит ID', () => pm.expect(data.id).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Отклонить пересекающееся бронирование",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/operations/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"roomId\": \"{{roomId}}\",\n  \"checkInDate\": \"{{conflictStartDate}}\",\n  \"checkOutDate\": \"{{conflictEndDate}}\",\n  \"guests\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Пересечение должно быть запрещено', () => pm.expect(pm.response.code).to.eql(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Отменить тестовое бронирование для проверки пересечения",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/operations/bookings/{{overlapBookingId}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Тестовое бронирование отменено', () => pm.expect(pm.response.json().status).to.eql('CANCELLED'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. CRUD — DELETE тестовых записей без связей",
+      "item": [
+        {
+          "name": "Удалить тестовый номер",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms/{{deleteRoomId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Удалить тестового клиента",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/customers/{{deleteCustomerId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP status is successful', () => pm.expect(pm.response.code).to.be.oneOf([200, 201, 204]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
