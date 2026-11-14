@@ -1,4 +1,7 @@
 package ru.student.grants.model;
 
-public class SessionStatus {
+public enum SessionStatus {
+    ACTIVE,
+    USED,
+    REVOKED
 }
